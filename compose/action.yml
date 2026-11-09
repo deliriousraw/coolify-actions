@@ -1,0 +1,55 @@
+name: Coolify Compose service
+description: >-
+  Declares one Coolify service from a Docker Compose file: creates or updates
+  it, restarts it only when the file or its settings changed, and waits until
+  it runs.
+branding:
+  icon: layers
+  color: purple
+
+inputs:
+  name:
+    description: The service's name in Coolify. It identifies the service inside the project and environment.
+    required: true
+  file:
+    description: The Compose file, relative to the repository root.
+    default: compose.yml
+  urls:
+    description: Addresses, one <compose service>=<url> per line, e.g. grafana=https://grafana.example.com. Several URLs for one service are separated by commas.
+  env:
+    description: Environment variables the Compose file reads, one KEY=value per line. A value like {{environment.GRAFANA_PASSWORD}} refers to a Coolify shared variable.
+  env-files:
+    description: Files of KEY=value lines, one path per line, relative to the repository root. Later files win, and `env` wins over them.
+  force:
+    description: Restart even when nothing changed.
+    default: "false"
+  wait:
+    description: Wait until the service runs, and fail when it does not.
+    default: "true"
+  timeout:
+    description: How long to wait, e.g. 90s, 15m, 1h.
+    default: 15m
+  coolify-url:
+    description: Where Coolify is, e.g. https://coolify.example.com. Defaults to the COOLIFY_URL environment variable.
+  coolify-token:
+    description: A Coolify API token with read, write and deploy. Defaults to COOLIFY_TOKEN.
+  project:
+    description: The Coolify project, by name or uuid. Defaults to COOLIFY_PROJECT.
+  environment:
+    description: The environment inside the project. Defaults to COOLIFY_ENVIRONMENT, then production.
+  server:
+    description: The server to run on, by name or uuid; used when the service is created. Defaults to COOLIFY_SERVER.
+  destination:
+    description: The uuid of the Docker network on the server, when it has several. Defaults to COOLIFY_DESTINATION.
+
+outputs:
+  uuid:
+    description: The service's uuid in Coolify.
+  created:
+    description: true when this run created the service.
+  changed:
+    description: true when this run started or restarted it, false when everything already matched.
+
+runs:
+  using: node24
+  main: main.mjs

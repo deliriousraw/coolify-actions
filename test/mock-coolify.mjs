@@ -27,18 +27,76 @@ export const startCoolify = async ({ shared = [], deploymentStatus = "finished" 
     applications: [],
     deploymentStatus,
     deployments: [],
+    serviceStatus: "running:healthy",
     envs: {},
     requests: [],
+    services: [],
+    shared: shared.map((key, index) => ({ id: index + 1, key, value: "x" })),
     storages: {},
   };
   let counter = 0;
   const routes = [
     ["GET", /^\/projects$/u, () => [{ id: 1, name: "shop", uuid: "proj-1" }]],
     ["GET", /^\/servers$/u, () => [{ id: 1, name: "pi", uuid: "srv-1" }]],
+    ["GET", /^\/projects\/proj-1\/environments\/production\/envs$/u, () => state.shared],
+    [
+      "POST",
+      /^\/projects\/proj-1\/environments\/production\/envs$/u,
+      (_, body) => {
+        counter += 1;
+        state.shared.push({ ...body, id: 100 + counter });
+        return body;
+      },
+    ],
+    [
+      "PATCH",
+      /^\/projects\/proj-1\/environments\/production\/envs\/(?<id>\d+)$/u,
+      ({ id }, body) => Object.assign(state.shared.find((item) => item.id === Number(id)), body),
+    ],
+    [
+      "DELETE",
+      /^\/projects\/proj-1\/environments\/production\/envs\/(?<id>\d+)$/u,
+      ({ id }) => {
+        state.shared = state.shared.filter((item) => item.id !== Number(id));
+        return { message: "deleted" };
+      },
+    ],
+    ["GET", /^\/services$/u, () => state.services],
+    [
+      "POST",
+      /^\/services$/u,
+      (_, body) => {
+        counter += 1;
+        const service = { ...body, description: null, environment_id: 7, status: "exited", uuid: `svc-${counter}` };
+        state.services.push(service);
+        return { domains: [], uuid: service.uuid };
+      },
+    ],
     [
       "GET",
-      /^\/projects\/proj-1\/environments\/production\/envs$/u,
-      () => shared.map((key) => ({ key })),
+      /^\/services\/(?<uuid>[^/]+)$/u,
+      ({ uuid }) => state.services.find((service) => service.uuid === uuid),
+    ],
+    [
+      "PATCH",
+      /^\/services\/(?<uuid>[^/]+)$/u,
+      ({ uuid }, body) => Object.assign(state.services.find((service) => service.uuid === uuid), body),
+    ],
+    [
+      "PATCH",
+      /^\/services\/(?<uuid>[^/]+)\/envs\/bulk$/u,
+      ({ uuid }, body) => {
+        state.envs[uuid] = body.data;
+        return body.data;
+      },
+    ],
+    [
+      "POST",
+      /^\/services\/(?<uuid>[^/]+)\/(?:start|restart\?latest=true)$/u,
+      ({ uuid }) => {
+        state.services.find((service) => service.uuid === uuid).status = state.serviceStatus;
+        return { message: "queued" };
+      },
     ],
     [
       "GET",
@@ -49,7 +107,7 @@ export const startCoolify = async ({ shared = [], deploymentStatus = "finished" 
     ["GET", /^\/applications$/u, () => state.applications],
     [
       "POST",
-      /^\/applications\/dockerimage$/u,
+      /^\/applications\/(?:dockerimage|dockerfile)$/u,
       (_, body) => {
         counter += 1;
         const application = {

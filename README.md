@@ -7,6 +7,9 @@ get there.
 | Action | What it does |
 | --- | --- |
 | [`image`](#image) | Declares one Coolify application that runs a registry image. Creates or updates it, deploys only when something changed, waits for the result. |
+| [`dockerfile`](#dockerfile) | The same for an application Coolify builds on the server from a Dockerfile. |
+| [`compose`](#compose) | Declares one Coolify service from a Docker Compose file. |
+| [`variables`](#variables) | Sets Coolify shared variables, for example from GitHub secrets. |
 | [`wait-for-http`](#wait-for-http) | Waits until a URL answers with the expected status and JSON values. |
 | [`warm-sitemap`](#warm-sitemap) | Requests every page of a sitemap, to refill a cache after a deploy. |
 
@@ -15,7 +18,7 @@ read in this repository is what runs.
 
 ## Connecting to Coolify
 
-Set the connection once for the workflow (or a job), and every `image` step
+Set the connection once for the workflow (or a job), and every Coolify step
 uses it:
 
 ```yaml
@@ -112,6 +115,84 @@ Volumes are only ever added, never removed.
 | `deployment` | The deployment's uuid, empty when unchanged. |
 | `digest` | The image digest, empty when the registry could not be read. |
 | `revision` | The commit the image was built from (`org.opencontainers.image.revision`), when the image has that label. |
+
+## dockerfile
+
+```yaml
+- uses: actions/checkout@v5
+- name: Deploy the status page
+  uses: deliriousraw/coolify-actions/dockerfile@v1
+  with:
+    name: status
+    file: infra/status/Dockerfile
+    domain: https://status.example.com
+    port: 8080
+```
+
+Coolify builds the image on the server, and rebuilds only when the Dockerfile
+or the settings changed. Only the Dockerfile's **content** is sent, so it
+cannot `COPY` files from your repository: this fits a Dockerfile that stands
+on its own (`FROM`, `RUN`, a few `ENV`). For an image built from your code,
+build it in CI and use [`image`](#image).
+
+Every other input and output is the same as for `image`, except the registry
+inputs and the `digest` and `revision` outputs.
+
+## compose
+
+```yaml
+- uses: actions/checkout@v5
+- name: Deploy the monitoring stack
+  uses: deliriousraw/coolify-actions/compose@v1
+  with:
+    name: monitoring
+    file: infra/monitoring/compose.yml
+    urls: |
+      grafana=https://grafana.example.com
+    env: |
+      GRAFANA_PASSWORD={{environment.GRAFANA_PASSWORD}}
+```
+
+Creates or updates a Coolify service from the file, and restarts it (pulling
+fresh images) only when the file, `urls` or `env` changed. `urls` maps a
+service of the Compose file to its address. The step waits until Coolify
+reports the service as running.
+
+Coolify replaces a Compose service by stopping it first, so expect a short
+gap on each change. Use `image` where you need a rolling update.
+
+| Input | Default | |
+| --- | --- | --- |
+| `name` | required | The service's name in Coolify. |
+| `file` | `compose.yml` | The Compose file. |
+| `urls` | none | `<compose service>=<url>` lines. |
+| `env`, `env-files` | none | As for `image`. |
+| `force`, `wait`, `timeout` | | As for `image`. |
+
+Outputs: `uuid`, `created`, `changed`.
+
+## variables
+
+```yaml
+- name: Set the shared secrets
+  uses: deliriousraw/coolify-actions/variables@v1
+  with:
+    variables: |
+      DATABASE_URL=${{ secrets.DATABASE_URL }}
+      SESSION_SECRET=${{ secrets.SESSION_SECRET }}
+```
+
+Creates or updates [shared variables](https://coolify.io/docs/knowledge-base/environment-variables)
+of the environment, which applications then read as
+`{{environment.DATABASE_URL}}`. With it, your GitHub secrets are the one place
+you edit secrets. The trade-off is that the values then pass through GitHub;
+leave this action out if secrets should only ever live in Coolify.
+
+`scope: project` or `scope: team` shares them more widely. `prune: true`
+removes shared variables of that scope that are not listed. Values are masked
+in the log. An application picks a new value up on its next deploy, so put
+this step before the `image` steps; the `changed` output lists the keys that
+changed.
 
 ## wait-for-http
 

@@ -1,0 +1,35 @@
+name: Coolify shared variables
+description: >-
+  Sets Coolify shared variables, the values applications refer to as
+  {{environment.KEY}}. Makes your GitHub secrets the one place secrets are
+  edited.
+branding:
+  icon: key
+  color: purple
+
+inputs:
+  variables:
+    description: The variables, one KEY=value per line. A value may not span lines.
+    required: true
+  scope:
+    description: Where they are shared, environment (one environment of a project), project or team.
+    default: environment
+  prune:
+    description: Remove shared variables of this scope that are not listed here.
+    default: "false"
+  coolify-url:
+    description: Where Coolify is, e.g. https://coolify.example.com. Defaults to the COOLIFY_URL environment variable.
+  coolify-token:
+    description: A Coolify API token with read and write. Defaults to COOLIFY_TOKEN.
+  project:
+    description: The Coolify project, by name or uuid; not needed for the team scope. Defaults to COOLIFY_PROJECT.
+  environment:
+    description: The environment inside the project, for the environment scope. Defaults to COOLIFY_ENVIRONMENT, then production.
+
+outputs:
+  changed:
+    description: The keys this run created, updated or removed, separated by spaces. Empty when everything already matched. Applications read a new value on their next deploy.
+
+runs:
+  using: node24
+  main: main.mjs

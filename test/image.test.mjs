@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { after, before, beforeEach, describe, it } from "node:test";
 import { promisify } from "node:util";
 import { createClient } from "../lib/coolify.mjs";
-import { deployImage, parseVolumes } from "../lib/image-app.mjs";
+import { deployImage, parseVolumes } from "../lib/application.mjs";
 import { inspectImage, parseImage } from "../lib/registry.mjs";
 import { startCoolify, startRegistry } from "./mock-coolify.mjs";
 
