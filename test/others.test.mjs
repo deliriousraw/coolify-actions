@@ -75,7 +75,7 @@ describe("deployService", () => {
       { key: "GRAFANA_PASSWORD", value: "{{environment.GRAFANA_PASSWORD}}" },
     ]);
     assert.ok(coolify.writes().includes("POST /services/svc-1/start"));
-    assert.match(service.description, /^\[deployed [0-9a-f]{12}\]$/u);
+    assert.match(service.description, /^\(deployed [0-9a-f]{12}\)$/u);
   });
 
   it("does nothing the second time, and restarts when the file changed", async () => {

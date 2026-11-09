@@ -77,7 +77,7 @@ describe("deployImage", () => {
       { mount_path: "/data", name: "api_data", type: "persistent" },
     ]);
     assert.equal(coolify.state.deployments.length, 1);
-    assert.match(application.description, /^\[deployed [0-9a-f]{12}\]$/u);
+    assert.match(application.description, /^\(deployed [0-9a-f]{12}\)$/u);
     await coolify.close();
   });
 
@@ -133,7 +133,7 @@ describe("deployImage", () => {
     await deployImage(spec(), deps);
     coolify.state.applications[0].description = `The API ${coolify.state.applications[0].description}`;
     await deployImage(spec({ digest: "sha256:bbb" }), deps);
-    assert.match(coolify.state.applications[0].description, /^The API \[deployed [0-9a-f]{12}\]$/u);
+    assert.match(coolify.state.applications[0].description, /^The API \(deployed [0-9a-f]{12}\)$/u);
     assert.equal(coolify.state.storages["app-1"].length, 1);
     await coolify.close();
   });
