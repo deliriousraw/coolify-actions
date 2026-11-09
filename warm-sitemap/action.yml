@@ -1,0 +1,34 @@
+name: Warm sitemap
+description: >-
+  Requests every page a site's sitemap lists, so a CDN or the site's own cache
+  holds them again after a deploy or a purge.
+branding:
+  icon: refresh-cw
+  color: purple
+
+inputs:
+  url:
+    description: The site, e.g. https://example.com (its /sitemap.xml is read), or a sitemap's own URL. One per line for several sites.
+    required: true
+  limit:
+    description: The most pages to request per site; 0 for no limit.
+    default: "500"
+  concurrency:
+    description: How many pages to request at once.
+    default: "4"
+  timeout:
+    description: How long one page may take.
+    default: 15s
+  fail-on-error:
+    description: Fail the step when a page does not answer. By default they are only logged as warnings.
+    default: "false"
+
+outputs:
+  requested:
+    description: How many pages were requested.
+  failed:
+    description: How many of them did not answer, or answered with an error.
+
+runs:
+  using: node24
+  main: main.mjs

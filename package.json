@@ -1,0 +1,11 @@
+{
+  "name": "coolify-actions",
+  "private": true,
+  "type": "module",
+  "description": "Small GitHub Actions for deploying to Coolify",
+  "license": "MIT",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  }
+}

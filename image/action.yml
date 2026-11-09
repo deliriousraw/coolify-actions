@@ -1,0 +1,77 @@
+name: Coolify image application
+description: >-
+  Declares one Coolify application that runs a registry image: creates or
+  updates it, deploys only when the image or its settings changed, and waits
+  for the result.
+branding:
+  icon: upload-cloud
+  color: purple
+
+inputs:
+  name:
+    description: The application's name in Coolify. It identifies the application inside the project and environment.
+    required: true
+  image:
+    description: The image to run, with its tag, e.g. ghcr.io/acme/shop/api:1.4.0. The name is lowercased for you.
+    required: true
+  domain:
+    description: The address the application is served on, with its scheme, e.g. https://api.example.com. Leave empty for a worker.
+  port:
+    description: The port the container listens on.
+    default: "80"
+  env:
+    description: Environment variables, one KEY=value per line. A value like {{environment.DATABASE_URL}} refers to a Coolify shared variable, so the secret stays in Coolify.
+  env-files:
+    description: Files of KEY=value lines, one path per line, relative to the repository root. Later files win, and `env` wins over them.
+  labels:
+    description: Container labels, one key=value per line, added to the ones Coolify generates for the domain.
+  volumes:
+    description: Persistent volumes, one name:/path per line.
+  stop-grace-period:
+    description: Seconds a container gets between SIGTERM and SIGKILL.
+  prune-env:
+    description: Remove environment variables that exist in Coolify but are not declared here.
+    default: "false"
+  force:
+    description: Deploy even when nothing changed.
+    default: "false"
+  wait:
+    description: Wait until the deployment finished, and fail when it failed.
+    default: "true"
+  timeout:
+    description: How long to wait for the deployment, e.g. 90s, 15m, 1h.
+    default: 15m
+  registry-username:
+    description: Username to read a private image's digest from its registry.
+  registry-password:
+    description: Password or token for the registry, e.g. the GITHUB_TOKEN for ghcr.io (with packages read).
+  coolify-url:
+    description: Where Coolify is, e.g. https://coolify.example.com. Defaults to the COOLIFY_URL environment variable.
+  coolify-token:
+    description: A Coolify API token with read, write and deploy. Defaults to COOLIFY_TOKEN.
+  project:
+    description: The Coolify project, by name or uuid. Defaults to COOLIFY_PROJECT.
+  environment:
+    description: The environment inside the project. Defaults to COOLIFY_ENVIRONMENT, then production.
+  server:
+    description: The server to run on, by name or uuid; used when the application is created. Defaults to COOLIFY_SERVER.
+  destination:
+    description: The uuid of the Docker network on the server, when it has several. Defaults to COOLIFY_DESTINATION.
+
+outputs:
+  uuid:
+    description: The application's uuid in Coolify.
+  created:
+    description: true when this run created the application.
+  changed:
+    description: true when this run deployed, false when everything already matched.
+  deployment:
+    description: The uuid of the deployment this run queued, empty when unchanged.
+  digest:
+    description: The digest the image tag points at, empty when the registry could not be read.
+  revision:
+    description: The commit the image was built from (its org.opencontainers.image.revision label), when it has one.
+
+runs:
+  using: node24
+  main: main.mjs

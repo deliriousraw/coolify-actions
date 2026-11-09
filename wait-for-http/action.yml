@@ -1,0 +1,31 @@
+name: Wait for HTTP
+description: >-
+  Waits until a URL answers with the expected status and, optionally, the
+  expected values in its JSON body. For checking that a release is live.
+branding:
+  icon: clock
+  color: purple
+
+inputs:
+  url:
+    description: The URL to request, e.g. https://example.com/api/health.
+    required: true
+  status:
+    description: The status code that means ready.
+    default: "200"
+  json:
+    description: Values the JSON body must have, one path=value per line, e.g. version=1.4.0 or checks.database=ok.
+  timeout:
+    description: How long to keep trying, e.g. 90s, 5m.
+    default: 5m
+  interval:
+    description: The pause between attempts.
+    default: 10s
+
+outputs:
+  attempts:
+    description: How many requests it took.
+
+runs:
+  using: node24
+  main: main.mjs

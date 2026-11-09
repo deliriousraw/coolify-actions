@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - run: npm test
+
+  # Runs the published action files the way a workflow would, against
+  # public pages, so a broken action.yml or entry point shows here.
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: ./wait-for-http
+        with:
+          url: https://api.github.com/zen
+          timeout: 1m
+      - uses: ./warm-sitemap
+        with:
+          url: https://coolify.io
+          limit: 3
