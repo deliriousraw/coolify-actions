@@ -18,6 +18,7 @@ await main(async () => {
         env: "COOLIFY_ENVIRONMENT",
         fallback: "production",
       }),
+      onlyMissing: boolean("only-missing", input("only-missing", { fallback: "false" })),
       project: input("project", { env: "COOLIFY_PROJECT" }),
       prune: boolean("prune", input("prune", { fallback: "false" })),
       scope,

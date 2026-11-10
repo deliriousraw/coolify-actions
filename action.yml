@@ -53,11 +53,11 @@ inputs:
   coolify-token:
     description: A Coolify API token with read, write and deploy. Defaults to COOLIFY_TOKEN.
   project:
-    description: The Coolify project, by name or uuid. Defaults to COOLIFY_PROJECT.
+    description: The Coolify project, by name or uuid. Defaults to COOLIFY_PROJECT, then the only project Coolify has.
   environment:
     description: The environment inside the project. Defaults to COOLIFY_ENVIRONMENT, then production.
   server:
-    description: The server to run on, by name or uuid; used when the application is created. Defaults to COOLIFY_SERVER.
+    description: The server to run on, by name or uuid; used when the application is created. Defaults to COOLIFY_SERVER, then the only server Coolify has.
   destination:
     description: The uuid of the Docker network on the server, when it has several. Defaults to COOLIFY_DESTINATION.
 

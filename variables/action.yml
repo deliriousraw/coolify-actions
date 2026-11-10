@@ -17,12 +17,15 @@ inputs:
   prune:
     description: Remove shared variables of this scope that are not listed here.
     default: "false"
+  only-missing:
+    description: Create the variables that do not exist yet and leave the others as they are, e.g. for a generated secret that must not change.
+    default: "false"
   coolify-url:
     description: Where Coolify is, e.g. https://coolify.example.com. Defaults to the COOLIFY_URL environment variable.
   coolify-token:
     description: A Coolify API token with read and write. Defaults to COOLIFY_TOKEN.
   project:
-    description: The Coolify project, by name or uuid; not needed for the team scope. Defaults to COOLIFY_PROJECT.
+    description: The Coolify project, by name or uuid; not needed for the team scope. Defaults to COOLIFY_PROJECT, then the only project Coolify has.
   environment:
     description: The environment inside the project, for the environment scope. Defaults to COOLIFY_ENVIRONMENT, then production.
 

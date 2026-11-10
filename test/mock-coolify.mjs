@@ -25,6 +25,7 @@ const readBody = async (request) => {
 export const startCoolify = async ({ shared = [], deploymentStatus = "finished" } = {}) => {
   const state = {
     applications: [],
+    databases: [],
     deploymentStatus,
     deployments: [],
     serviceStatus: "running:healthy",
@@ -195,6 +196,29 @@ export const startCoolify = async ({ shared = [], deploymentStatus = "finished" 
       "GET",
       /^\/deployments\/(?<uuid>[^/]+)$/u,
       () => ({ status: state.deploymentStatus }),
+    ],
+    ["GET", /^\/databases$/u, () => state.databases],
+    [
+      "POST",
+      /^\/databases\/(?<type>postgresql|redis)$/u,
+      ({ type }, body) => {
+        counter += 1;
+        const database = {
+          ...body,
+          environment_id: 7,
+          status: body.instant_deploy ? "running:healthy" : "exited",
+          type,
+          uuid: `db-${counter}`,
+        };
+        state.databases.push(database);
+        // Without read:sensitive, Coolify answers with the uuid only.
+        return { uuid: database.uuid };
+      },
+    ],
+    [
+      "GET",
+      /^\/databases\/(?<uuid>[^/]+)$/u,
+      ({ uuid }) => state.databases.find((database) => database.uuid === uuid),
     ],
   ];
 

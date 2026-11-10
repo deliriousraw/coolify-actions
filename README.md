@@ -29,10 +29,10 @@ uses it:
 env:
   COOLIFY_URL: ${{ vars.COOLIFY_URL }}        # https://coolify.example.com
   COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}  # API token: read, write, deploy
-  COOLIFY_PROJECT: production                  # project name or uuid
-  COOLIFY_SERVER: localhost                    # server name or uuid
 ```
 
+`COOLIFY_PROJECT` and `COOLIFY_SERVER` (a name or uuid) are only needed when
+Coolify has several projects or servers; otherwise the only one is used.
 `COOLIFY_ENVIRONMENT` defaults to `production`. Each of these also exists as
 an input (`coolify-url`, `coolify-token`, `project`, `server`, `environment`)
 when one step needs a different value. GitHub's runners must be able to reach
@@ -193,7 +193,9 @@ you edit secrets. The trade-off is that the values then pass through GitHub;
 leave this action out if secrets should only ever live in Coolify.
 
 `scope: project` or `scope: team` shares them more widely. `prune: true`
-removes shared variables of that scope that are not listed. Values are masked
+removes shared variables of that scope that are not listed, and
+`only-missing: true` creates only the keys that do not exist yet, leaving the
+others as they are. Values are masked
 in the log. An application picks a new value up on its next deploy, so put
 this step before the `image` steps; the `changed` output lists the keys that
 changed.
@@ -247,8 +249,6 @@ on:
 env:
   COOLIFY_URL: ${{ vars.COOLIFY_URL }}
   COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
-  COOLIFY_PROJECT: production
-  COOLIFY_SERVER: localhost
 
 jobs:
   deploy:
@@ -275,6 +275,35 @@ jobs:
         with:
           url: https://example.com
 ```
+
+## From a script
+
+The code behind the actions is in `lib/` and runs anywhere Node 22 runs, for
+example in a setup script that prepares a new Coolify. Install the repository
+at a tag (`npm install -D github:deliriousraw/coolify-actions#v1.2.0`) and
+import the files:
+
+```js
+import { createClient } from "coolify-actions/lib/coolify.mjs";
+import { ensureDatabase } from "coolify-actions/lib/database.mjs";
+import { setSharedVariables } from "coolify-actions/lib/shared-variables.mjs";
+
+const api = createClient({ url: "https://coolify.example.com", token });
+const deps = { api, log: { info: console.log, warning: console.warn }, sleep: (s) => new Promise((r) => setTimeout(r, s * 1000)) };
+const postgres = await ensureDatabase({ type: "postgresql", name: "postgres", environment: "production" }, deps);
+await setSharedVariables(
+  { scope: "environment", environment: "production", onlyMissing: true, variables: new Map([["DATABASE_URL", postgres.url]]) },
+  deps
+);
+```
+
+- `ensureDatabase` finds a PostgreSQL or Redis database by name in the
+  environment, or creates it with a generated password, starts it and waits
+  until it runs. It returns its connection URL inside the server; for a
+  database it did not create, that needs a token with `read:sensitive`.
+- `deployImage`, `deployDockerfile` (`lib/application.mjs`) and
+  `deployService` (`lib/service.mjs`) are what the actions run.
+- `setSharedVariables` with `onlyMissing` never replaces a value that exists.
 
 ## Development
 
