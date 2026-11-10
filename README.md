@@ -16,6 +16,10 @@ get there.
 They are plain JavaScript with no dependencies and no build step: what you
 read in this repository is what runs.
 
+The repository root is the `image` action too, which is what the GitHub
+Marketplace lists: `deliriousraw/coolify-actions@v1` and
+`deliriousraw/coolify-actions/image@v1` run the same code.
+
 ## Connecting to Coolify
 
 Set the connection once for the workflow (or a job), and every Coolify step
