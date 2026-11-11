@@ -101,6 +101,7 @@ changes anything.
 | `labels` | none | `key=value` container labels, added to the ones Coolify generates for the domain. |
 | `volumes` | none | `name:/path` lines, persistent volumes. |
 | `network-aliases` | none | More names the container answers to on the server's Docker network, one per line or comma-separated. |
+| `memory` | Coolify's | The container's memory limit, e.g. `768m` or `1g`; `0` removes it. |
 | `stop-grace-period` | Coolify's | Seconds between SIGTERM and SIGKILL. |
 | `prune-env` | `false` | Remove variables that are in Coolify but not declared here. |
 | `force` | `false` | Deploy even when nothing changed. |
@@ -129,6 +130,26 @@ reserved for private use, so it never hides a real one) is unique per
 deployment. During a rolling update both containers answer to the alias
 until the old one stops. Leaving the input empty keeps what Coolify has, so
 to remove an alias, clear it in the application's settings in Coolify.
+
+### Memory limit
+
+Without a limit every container sees all of the server's memory, and a
+Node.js process sizes its heap from that: on a small server, several apps
+that each grow to what they think they may use can run it out together.
+Declare one per application:
+
+```yaml
+    memory: 768m
+```
+
+It is Docker's `mem_limit` (Coolify's **Resource Limits → Maximum Memory
+Limit**). Docker lets the container swap as much again unless the server has
+no swap; Coolify's swap setting is left alone. Node.js reads the limit and sizes
+its heap to about half of it (but never under about 256 MB, so give a
+Node.js app at least `512m`): a limit also keeps the heap, and with it the
+process's memory, smaller, at the cost of more frequent garbage collection. Changing the value redeploys the application, which is
+how Docker applies it. Leaving the input empty keeps what Coolify has; `0`
+removes the limit.
 
 ### Outputs
 
