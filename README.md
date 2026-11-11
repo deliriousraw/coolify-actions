@@ -100,6 +100,7 @@ changes anything.
 | `env-files` | none | Paths of `KEY=value` files, one per line. Later files win, and `env` wins over files. Needs a checkout step. |
 | `labels` | none | `key=value` container labels, added to the ones Coolify generates for the domain. |
 | `volumes` | none | `name:/path` lines, persistent volumes. |
+| `network-aliases` | none | More names the container answers to on the server's Docker network, one per line or comma-separated. |
 | `stop-grace-period` | Coolify's | Seconds between SIGTERM and SIGKILL. |
 | `prune-env` | `false` | Remove variables that are in Coolify but not declared here. |
 | `force` | `false` | Deploy even when nothing changed. |
@@ -108,6 +109,26 @@ changes anything.
 
 A variable declared with an empty value (`KEY=`) is treated as not declared.
 Volumes are only ever added, never removed.
+
+### Reaching an application from another one
+
+Coolify names each container after the application's uuid plus a timestamp,
+so the name changes with every deployment. To call one application from
+another without going out through its public domain (a CDN, a tunnel, TLS),
+give it a stable name on the server's Docker network:
+
+```yaml
+    network-aliases: auth.example.com.internal
+```
+
+Other containers on that network (with `connect_to_docker_network`, which
+this action turns on) then reach it at `http://auth.example.com.internal:3000`.
+Every application on the network shares one namespace, so pick a name no
+other project on the server uses: the public host plus `.internal` (a domain
+reserved for private use, so it never hides a real one) is unique per
+deployment. During a rolling update both containers answer to the alias
+until the old one stops. Leaving the input empty keeps what Coolify has, so
+to remove an alias, clear it in the application's settings in Coolify.
 
 ### Outputs
 
