@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { after, before, beforeEach, describe, it } from "node:test";
 import { promisify } from "node:util";
 import { createClient } from "../lib/coolify.mjs";
-import { deployImage, parseVolumes } from "../lib/application.mjs";
+import { deployImage, parseNetworkAliases, parseVolumes } from "../lib/application.mjs";
 import { inspectImage, parseImage } from "../lib/registry.mjs";
 import { startCoolify, startRegistry } from "./mock-coolify.mjs";
 
@@ -107,6 +107,7 @@ describe("deployImage", () => {
     ["the image", { digest: "sha256:bbb" }],
     ["an environment variable", { env: new Map([["LOG_LEVEL", "debug"]]) }],
     ["the domain", { domain: "https://api2.example.com" }],
+    ["a network alias", { networkAliases: ["api.internal"] }],
     ["force", { force: true }],
   ]) {
     it(`deploys again when ${what} changed`, async () => {
@@ -121,6 +122,20 @@ describe("deployImage", () => {
       await coolify.close();
     });
   }
+
+  it("sets network aliases, and leaves Coolify's alone when none are declared", async () => {
+    await deployImage(spec(), deps);
+    assert.equal(coolify.state.applications[0].custom_network_aliases, undefined);
+    await deployImage(
+      spec({ networkAliases: ["api.example.com.internal", "api"] }),
+      deps
+    );
+    assert.equal(
+      coolify.state.applications[0].custom_network_aliases,
+      "api.example.com.internal,api"
+    );
+    await coolify.close();
+  });
 
   it("deploys again when the application is not running", async () => {
     await deployImage(spec(), deps);
@@ -190,6 +205,20 @@ describe("deployImage", () => {
     const api = createClient({ pause: 0, token: "wrong", url: coolify.url });
     await assert.rejects(deployImage(spec(), { ...deps, api }), /401.*Check the token/u);
     await coolify.close();
+  });
+});
+
+describe("parseNetworkAliases", () => {
+  it("takes one per line or comma-separated", () => {
+    assert.deepEqual(parseNetworkAliases(["a.internal, b", "c_d-e"]), [
+      "a.internal",
+      "b",
+      "c_d-e",
+    ]);
+  });
+  it("rejects what Docker would not resolve", () => {
+    assert.throws(() => parseNetworkAliases(["http://auth"]), /not a valid network alias/u);
+    assert.throws(() => parseNetworkAliases(["auth host"]), /not a valid network alias/u);
   });
 });
 

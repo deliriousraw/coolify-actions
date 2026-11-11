@@ -27,6 +27,8 @@ inputs:
     description: Container labels, one key=value per line, added to the ones Coolify generates for the domain.
   volumes:
     description: Persistent volumes, one name:/path per line.
+  network-aliases:
+    description: More names the container answers to on the server's Docker network, one per line, e.g. auth.example.com.internal. Other containers on that network reach it at http://<alias>:<port>. Leaving it empty keeps what Coolify has.
   stop-grace-period:
     description: Seconds a container gets between SIGTERM and SIGKILL.
   prune-env:
