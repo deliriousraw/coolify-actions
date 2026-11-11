@@ -6,7 +6,12 @@ import { join } from "node:path";
 import { after, before, beforeEach, describe, it } from "node:test";
 import { promisify } from "node:util";
 import { createClient } from "../lib/coolify.mjs";
-import { deployImage, parseNetworkAliases, parseVolumes } from "../lib/application.mjs";
+import {
+  deployImage,
+  parseMemory,
+  parseNetworkAliases,
+  parseVolumes,
+} from "../lib/application.mjs";
 import { inspectImage, parseImage } from "../lib/registry.mjs";
 import { startCoolify, startRegistry } from "./mock-coolify.mjs";
 
@@ -108,6 +113,7 @@ describe("deployImage", () => {
     ["an environment variable", { env: new Map([["LOG_LEVEL", "debug"]]) }],
     ["the domain", { domain: "https://api2.example.com" }],
     ["a network alias", { networkAliases: ["api.internal"] }],
+    ["the memory limit", { memory: "768m" }],
     ["force", { force: true }],
   ]) {
     it(`deploys again when ${what} changed`, async () => {
@@ -134,6 +140,18 @@ describe("deployImage", () => {
       coolify.state.applications[0].custom_network_aliases,
       "api.example.com.internal,api"
     );
+    await coolify.close();
+  });
+
+  it("sets the memory limit, and leaves Coolify's alone when none is declared", async () => {
+    await deployImage(spec(), deps);
+    assert.equal(coolify.state.applications[0].limits_memory, undefined);
+    await deployImage(spec({ memory: "1g" }), deps);
+    assert.equal(coolify.state.applications[0].limits_memory, "1g");
+    coolify.state.requests.length = 0;
+    assert.equal((await deployImage(spec({ memory: "1g" }), deps)).changed, false);
+    await deployImage(spec({ memory: "0" }), deps);
+    assert.equal(coolify.state.applications[0].limits_memory, "0");
     await coolify.close();
   });
 
@@ -205,6 +223,21 @@ describe("deployImage", () => {
     const api = createClient({ pause: 0, token: "wrong", url: coolify.url });
     await assert.rejects(deployImage(spec(), { ...deps, api }), /401.*Check the token/u);
     await coolify.close();
+  });
+});
+
+describe("parseMemory", () => {
+  it("accepts what Coolify accepts, and nothing", () => {
+    assert.equal(parseMemory(""), "");
+    assert.equal(parseMemory(" 768M "), "768m");
+    assert.equal(parseMemory("0"), "0");
+    assert.equal(parseMemory("1g"), "1g");
+  });
+
+  it("refuses a size without a unit or with Docker's long units", () => {
+    assert.throws(() => parseMemory("512"), /not a memory size/u);
+    assert.throws(() => parseMemory("1gb"), /not a memory size/u);
+    assert.throws(() => parseMemory("1.5g"), /not a memory size/u);
   });
 });
 
