@@ -32,6 +32,8 @@ inputs:
     description: Persistent volumes, one name:/path per line.
   network-aliases:
     description: More names the container answers to on the server's Docker network, one per line, e.g. auth.example.com.internal. Other containers on that network reach it at http://<alias>:<port>. Leaving it empty keeps what Coolify has.
+  extra-hosts:
+    description: Entries for the container's /etc/hosts, one name:address per line or comma-separated, e.g. host.docker.internal:host-gateway to reach a service on the server itself. Leaving it empty keeps what Coolify has.
   memory:
     description: The most memory the container may use, e.g. 512m or 1g (a number and b, k, m or g). Docker lets it swap as much again, and Node.js sizes its heap to about half of it. 0 removes the limit; leaving it empty keeps what Coolify has.
   stop-grace-period:

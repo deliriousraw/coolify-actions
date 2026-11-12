@@ -101,6 +101,7 @@ changes anything.
 | `labels` | none | `key=value` container labels, added to the ones Coolify generates for the domain. |
 | `volumes` | none | `name:/path` lines, persistent volumes. |
 | `network-aliases` | none | More names the container answers to on the server's Docker network, one per line or comma-separated. |
+| `extra-hosts` | none | `name:address` entries for the container's `/etc/hosts`, one per line or comma-separated, e.g. `host.docker.internal:host-gateway`. See [Reaching a service on the server](#reaching-a-service-on-the-server). |
 | `memory` | Coolify's | The container's memory limit, e.g. `768m` or `1g`; `0` removes it. |
 | `stop-grace-period` | Coolify's | Seconds between SIGTERM and SIGKILL. |
 | `prune-env` | `false` | Remove variables that are in Coolify but not declared here. |
@@ -130,6 +131,23 @@ reserved for private use, so it never hides a real one) is unique per
 deployment. During a rolling update both containers answer to the alias
 until the old one stops. Leaving the input empty keeps what Coolify has, so
 to remove an alias, clear it in the application's settings in Coolify.
+
+### Reaching a service on the server
+
+A container reaches a process that runs on the server itself, outside
+Docker (a systemd service, something on the host network), through the
+Docker host's gateway. Docker names it for you:
+
+```yaml
+    extra-hosts: host.docker.internal:host-gateway
+```
+
+The container then calls `http://host.docker.internal:<port>`. The action
+writes it as `--add-host` into the application's custom Docker options
+(Coolify's **Advanced → Custom Docker Options**), which it replaces. The
+service must listen on an address the Docker bridge reaches (not only
+127.0.0.1), and the server's firewall must admit the Docker networks on
+that port. Leaving the input empty keeps what Coolify has.
 
 ### Memory limit
 
