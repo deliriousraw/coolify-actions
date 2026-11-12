@@ -9,6 +9,7 @@ import { createClient } from "../lib/coolify.mjs";
 import {
   deployImage,
   parseMemory,
+  parseExtraHosts,
   parseNetworkAliases,
   parseVolumes,
 } from "../lib/application.mjs";
@@ -113,6 +114,7 @@ describe("deployImage", () => {
     ["an environment variable", { env: new Map([["LOG_LEVEL", "debug"]]) }],
     ["the domain", { domain: "https://api2.example.com" }],
     ["a network alias", { networkAliases: ["api.internal"] }],
+    ["an extra host", { extraHosts: ["host.docker.internal:host-gateway"] }],
     ["the memory limit", { memory: "768m" }],
     ["force", { force: true }],
   ]) {
@@ -139,6 +141,20 @@ describe("deployImage", () => {
     assert.equal(
       coolify.state.applications[0].custom_network_aliases,
       "api.example.com.internal,api"
+    );
+    await coolify.close();
+  });
+
+  it("sets extra hosts as docker run options, and leaves Coolify's alone when none are declared", async () => {
+    await deployImage(spec(), deps);
+    assert.equal(coolify.state.applications[0].custom_docker_run_options, undefined);
+    await deployImage(
+      spec({ extraHosts: ["host.docker.internal:host-gateway", "db:10.0.0.5"] }),
+      deps
+    );
+    assert.equal(
+      coolify.state.applications[0].custom_docker_run_options,
+      "--add-host=host.docker.internal:host-gateway --add-host=db:10.0.0.5"
     );
     await coolify.close();
   });
@@ -252,6 +268,20 @@ describe("parseNetworkAliases", () => {
   it("rejects what Docker would not resolve", () => {
     assert.throws(() => parseNetworkAliases(["http://auth"]), /not a valid network alias/u);
     assert.throws(() => parseNetworkAliases(["auth host"]), /not a valid network alias/u);
+  });
+});
+
+describe("parseExtraHosts", () => {
+  it("takes one per line or comma-separated", () => {
+    assert.deepEqual(
+      parseExtraHosts(["host.docker.internal:host-gateway, db:10.0.0.5", "v6:fd00::1"]),
+      ["host.docker.internal:host-gateway", "db:10.0.0.5", "v6:fd00::1"]
+    );
+  });
+  it("rejects what --add-host would not take", () => {
+    assert.throws(() => parseExtraHosts(["host.docker.internal"]), /not an extra host/u);
+    assert.throws(() => parseExtraHosts(["a b:1.2.3.4"]), /not an extra host/u);
+    assert.throws(() => parseExtraHosts(["db:--privileged"]), /not an extra host/u);
   });
 });
 
