@@ -108,11 +108,14 @@ export const startCoolify = async ({ shared = [], deploymentStatus = "finished" 
     ["GET", /^\/applications$/u, () => state.applications],
     [
       "POST",
-      /^\/applications\/(?:dockerimage|dockerfile)$/u,
-      (_, body) => {
+      /^\/applications\/(?<kind>dockerimage|dockerfile)$/u,
+      ({ kind }, body) => {
         counter += 1;
         const application = {
           ...body,
+          // Coolify 4.7 ignores the port given for a Dockerfile and, finding
+          // no EXPOSE in the still base64-encoded Dockerfile, uses 80.
+          ...(kind === "dockerfile" && { ports_exposes: "80" }),
           custom_labels: Buffer.from("coolify.managed=true").toString("base64"),
           description: null,
           environment_id: 7,
