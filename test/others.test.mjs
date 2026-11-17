@@ -44,6 +44,27 @@ describe("deployDockerfile", () => {
     assert.equal(Buffer.from(coolify.state.applications[0].dockerfile, "base64").toString(), "FROM nginx\n");
   });
 
+  it("routes the domain to the declared port, which Coolify 4.7 replaces with 80", async () => {
+    await deployDockerfile({ ...spec("FROM minio\nEXPOSE 9000\n"), port: "9000" }, deps);
+    assert.equal(coolify.state.applications[0].ports_exposes, "9000");
+    // Before the deployment, which writes the proxy's labels from it.
+    const writes = coolify.writes();
+    assert.ok(
+      writes.indexOf("PATCH /applications/app-1") < writes.indexOf("POST /deploy"),
+      writes.join("\n")
+    );
+  });
+
+  it("redeploys an application whose port is not the declared one", async () => {
+    const minio = { ...spec("FROM minio\n"), port: "9000" };
+    await deployDockerfile(minio, deps);
+    // Created by an earlier version, with Coolify's 80.
+    coolify.state.applications[0].ports_exposes = "80";
+    const result = await deployDockerfile(minio, deps);
+    assert.equal(result.changed, true);
+    assert.equal(coolify.state.applications[0].ports_exposes, "9000");
+  });
+
   it("rebuilds only when the Dockerfile changed", async () => {
     await deployDockerfile(spec("FROM nginx\n"), deps);
     assert.equal((await deployDockerfile(spec("FROM nginx\n"), deps)).changed, false);

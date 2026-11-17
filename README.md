@@ -62,7 +62,8 @@ What happens, in order:
 2. If it does not exist, it is created. If it does, what you declared is
    compared with what was last deployed.
 3. Nothing changed and the application is running: the step ends, with
-   `changed=false`. No restart.
+   `changed=false`. No restart. An application whose port in Coolify is not
+   `port` counts as changed.
 4. Otherwise the settings, environment, labels and volumes are written, and a
    Coolify deployment is queued (a rolling update: the old container serves
    until the new one is healthy).
@@ -183,6 +184,11 @@ build it in CI and use [`image`](#image).
 
 Every other input and output is the same as for `image`, except the registry
 inputs and the `digest` and `revision` outputs.
+
+Coolify 4.7 replaces the port of an application it creates from a
+Dockerfile with 80, so its domain would answer 502: the step sets `port`
+again before the first deployment, and corrects an application created
+before this fix on its next run.
 
 ## compose
 
